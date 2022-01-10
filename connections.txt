@@ -1,0 +1,7 @@
+CN105    <--->    ESP82656
+------------------------------
+12V 1
+GND 2    Black    GND 
+5V  3    Red      VIN
+TX  4    Green    RX
+RX  5    Blue     TX
