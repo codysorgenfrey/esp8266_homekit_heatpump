@@ -4,6 +4,8 @@
 #include "common.h"
 #include <HeatPump.h>
 #include "heatPumpAccessory.h"
+#include "heatPumpFanAccessory.h"
+#include "heatPumpSlatsAccessory.h"
 
 extern "C" homekit_server_config_t config;
 
@@ -49,6 +51,12 @@ void handleStatus() {
     }
 }
 
+void heatPumpTellHomekitWhatsUp() {
+    heatPumpAccessorySettingsChanged();
+    heatPumpFanAccessorySettingsChanged();
+    heatPumpSlatsAccessorySettingsChanged();
+}
+
 void setup()
 {
     // Setup output LED
@@ -86,6 +94,8 @@ void setup()
     case STATUS_NO_HOMEKIT:
         // Connect to Homekit
         initHeatPumpAccessory();
+        initHeatPumpFanAccessory();
+        initHeatPumpSlatsAccessory();
         arduino_homekit_setup(&config);
 
         boardStatus = STATUS_NO_HEAT_PUMP;
@@ -93,11 +103,13 @@ void setup()
 
     case STATUS_NO_HEAT_PUMP:
         // Connect to heat pump
+        Serial.flush();
+        Serial.end();
+        hp.enableExternalUpdate();
+        hp.setSettingsChangedCallback(heatPumpTellHomekitWhatsUp);
+        hp.setOnConnectCallback(heatPumpTellHomekitWhatsUp);
         #if !HP_DISCONNECTED
-            Serial.flush();
-            Serial.end();
             boardStatus = hp.connect(&Serial) ? STATUS_OK : STATUS_NO_HEAT_PUMP;
-            hp.enableExternalUpdate();
         #else
             boardStatus = STATUS_OK;
         #endif

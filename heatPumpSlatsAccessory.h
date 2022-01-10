@@ -1,99 +1,77 @@
 #include "common.h"
+#include <HeatPump.h>
 
-// struct HeatPumpSlatsAccessory : Service::Slat
-// {
-//     SpanCharacteristic *curState;
-//     SpanCharacteristic *type;
-//     SpanCharacteristic *swingMode;
-//     SpanCharacteristic *curAngle;
-//     SpanCharacteristic *tarAngle;
-//     HeatPump *hp;
+extern "C" homekit_characteristic_t slatType;      // 0 horizontal, 1 vertical
+extern "C" homekit_characteristic_t slatState;     // 0 fixed, 1 jammed, 2 swinging
+extern "C" homekit_characteristic_t slatCurAngle;  // -90 to 90 where -90 is straight out and 90 is straight down
+extern "C" homekit_characteristic_t slatTarAngle;  // -90 to 90 where -90 is straight out and 90 is straight down
+extern "C" homekit_characteristic_t slatSwingMode; // 0 disabled, 1 enabled
 
-//     HeatPumpSlatsAccessory(HeatPump *inHp) : Service::Slat()
-//     { 
-//         hp = inHp;
-//         curState = new Characteristic::CurrentSlatState(); // 0 fixed, 1 jammed, 2 swinging
-//         type = new Characteristic::SlatType(1);            // 0 horizontal, 1 vertical
-//         swingMode = new Characteristic::SwingMode();       // 0 disabled, 1 enabled
-//         curAngle = new Characteristic::CurrentTiltAngle(); // -90 to 90 where -90 is straight out and 90 is straight down
-//         tarAngle = new Characteristic::TargetTiltAngle();
-//     }
+void heatPumpSlatsAccessorySettingsChanged() {
+    /* Air direction (vertical): 1-5, SWING, or AUTO */
+    const char *slatMode = hp.getVaneSetting();
+    bool hpSlatSwing = slatMode == "SWING";
+    bool hpSlatAuto = slatMode == "AUTO";
+    int hpSlatState = hpSlatSwing ? 2 : 0;
+    int hpSlatAngle = 0;
 
-//     boolean update()
-//     { 
-//         #if DEBUG_HOMEKIT
-//             printDiagnostic();
-//         #endif
-        
-//         #if TESTING_HP
-//             updateHeatPumpState();
-//             return true;
-//         #else
-//             return updateHeatPumpState();
-//         #endif
-//     }
+    if (hpSlatAuto) {
+        const char *hpMode = hp.getModeSetting();
+        if (hpMode == "HEAT")
+            hpSlatAngle = 90;
+        else if (hpMode == "COOL" || hpMode == "DRY")
+            hpSlatAngle = -90;
+    } else if (!hpSlatSwing)
+        hpSlatAngle = -90 + ((atoi(slatMode) - 1) * 45);
 
-//     void loop() {
-//         #if !TESTING_HP
-//             if (millis() % (HK_UPDATE_TIMER * 1000) == 0)
-//                 updateHomekitState();
-//         #endif
-//     }
+    // State
+    if (slatState.value.int_value != hpSlatState) {
+        slatState.value.int_value = hpSlatState;
+        homekit_characteristic_notify(&slatState, slatState.value);
+    }
 
-//     bool updateHeatPumpState() {
-//         const char *slatSetting;
-        
-//         // Angle
-//         slatSetting = String(((90 + tarAngle->getNewVal()) / 45) + 1).c_str();
+    // Swing
+    if (slatSwingMode.value.bool_value != hpSlatSwing) {
+        slatSwingMode.value.bool_value = hpSlatSwing;
+        homekit_characteristic_notify(&slatSwingMode, slatSwingMode.value);
+    }
 
-//         // Swing
-//         if (swingMode->getNewVal())
-//             slatSetting = "SWING";
+    // Angle
+    if (slatCurAngle.value.int_value != hpSlatAngle) {
+        slatCurAngle.value.int_value = hpSlatAngle;
+        homekit_characteristic_notify(&slatCurAngle, slatCurAngle.value);
+    }
+}
 
-//         hp->setVaneSetting(slatSetting);
-//         return hp->update();
-//     }
+void slatTarAngleSetter(homekit_value_t value) {
+    #if HK_DEBUG
+        Serial.print("Setting HP slat target angle: ");
+        Serial.println(value.int_value);
+    #endif
 
-//     void updateHomekitState() {
-//         /* Air direction (vertical): 1-5, SWING, or AUTO */
-//         const char *slatMode = hp->getVaneSetting();
-//         bool slatSwing = slatMode == "SWING";
-//         bool slatAuto = slatMode == "AUTO";
-//         int slatState = slatSwing ? 2 : 0;
-//         int slatAngle = 0;
+    slatTarAngle.value = value;
 
-//         if (slatAuto) {
-//             const char *hpMode = hp->getModeSetting();
-//             if (hpMode == "HEAT")
-//                 slatAngle = 90;
-//             else if (hpMode == "COOL" || hpMode == "DRY")
-//                 slatAngle = -90;
-//         } else if (!slatSwing)
-//             slatAngle = -90 + ((atoi(slatMode) - 1) * 45);
+    #if !HP_DISCONNECTED
+        hp.setVaneSetting(slatSwingMode.value.bool_value ? "SWING" : String(((90 + slatTarAngle.value.float_value) / 45) + 1).c_str());
+        hp.update();
+    #endif
+}
 
-//         // State
-//         if (curState->getVal() != slatState)
-//             curState->setVal(slatState);
+void slatSwingModeSetter(homekit_value_t value) {
+    #if HK_DEBUG
+        Serial.print("Setting HP slat swing mode: ");
+        Serial.println(value.bool_value);
+    #endif
 
-//         // Swing
-//         if (swingMode->getVal() != slatSwing)
-//             swingMode->setVal(slatSwing);
+    slatSwingMode.value = value;
 
-//         // Angle
-//         if (curAngle->getVal() != slatAngle)
-//             curAngle->setVal(slatAngle);
-//     }
+    #if !HP_DISCONNECTED
+        hp.setVaneSetting(slatSwingMode.value.bool_value ? "SWING" : String(((90 + slatTarAngle.value.float_value) / 45) + 1).c_str());
+        hp.update();
+    #endif
+}
 
-//     void printDiagnostic() {
-//         Serial.println();
-
-//         Serial.print("swingMode: ");
-//         Serial.println(swingMode->getNewVal() ? "On" : "Off");
-
-//         Serial.print("curAngle: ");
-//         Serial.println(curAngle->getNewVal());
-
-//         Serial.print("tarAngle: ");
-//         Serial.println(tarAngle->getNewVal());
-//     }
-// };
+void initHeatPumpSlatsAccessory() {
+    slatTarAngle.setter = slatTarAngleSetter;
+    slatSwingMode.setter = slatSwingModeSetter;
+}

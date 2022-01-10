@@ -48,7 +48,7 @@ double getTempFromState() {
     return hkTemp;
 }
 
-void updateHomekitState() {
+void heatPumpAccessorySettingsChanged() {
     //////////////////////////////////////////////////////////////////
     // Get variables from Heat Pump & Homekit                       //
     //////////////////////////////////////////////////////////////////
@@ -92,16 +92,22 @@ void updateHomekitState() {
     //////////////////////////////////////////////////////////////////
 
     // Active
-    if (active.value.bool_value != hp.getPowerSettingBool())
+    if (active.value.bool_value != hp.getPowerSettingBool()) {
         active.value.bool_value = hp.getPowerSettingBool();
+        homekit_characteristic_notify(&active, active.value);
+    }
 
     // Mode
-    if (hpModes[hpTarState] != hp.getModeSetting())
+    if (hpModes[hpTarState] != hp.getModeSetting()) {
         tarState.value.int_value = hpTarState;
+        homekit_characteristic_notify(&tarState, tarState.value);
+    }
 
     // State
-    if (hpCurState != curState.value.int_value)
+    if (hpCurState != curState.value.int_value) {
         curState.value.int_value = hpCurState;
+        homekit_characteristic_notify(&curState, curState.value);
+    }
 
     // Temperature
     if (hkTemp != hpTemp)
@@ -109,22 +115,28 @@ void updateHomekitState() {
         {
         case 1: // Heating
             heatingThresholdTemp.value.float_value = hpTemp;
+            homekit_characteristic_notify(&heatingThresholdTemp, heatingThresholdTemp.value);
             break;
 
         case 2: // Cooling
             coolingThresholdTemp.value.float_value = hpTemp;
+            homekit_characteristic_notify(&coolingThresholdTemp, coolingThresholdTemp.value);
             break;
         
         default: // Auto and Off
             double diff = hpTemp - hkTemp;
             coolingThresholdTemp.value.float_value = (coolingThresholdTemp.value.float_value + diff);
+            homekit_characteristic_notify(&coolingThresholdTemp, coolingThresholdTemp.value);
             heatingThresholdTemp.value.float_value = (heatingThresholdTemp.value.float_value + diff);
+            homekit_characteristic_notify(&heatingThresholdTemp, heatingThresholdTemp.value);
             break;
         }
 
     // Room temperature
-    if (roomTemp.value.float_value != hp.getRoomTemperature()) 
+    if (roomTemp.value.float_value != hp.getRoomTemperature()) {
         roomTemp.value.float_value = hp.getRoomTemperature();
+        homekit_characteristic_notify(&roomTemp, roomTemp.value);
+    }
 }
 
 void activeSetter(homekit_value_t value) {
@@ -191,4 +203,4 @@ void initHeatPumpAccessory() {
     heatingThresholdTemp.setter = heatingTempSetter;
 }
 
-#endif
+#endif  
