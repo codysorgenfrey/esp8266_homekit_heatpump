@@ -26,7 +26,7 @@ homekit_characteristic_t slatSwingMode = HOMEKIT_CHARACTERISTIC_(SWING_MODE, 0);
 homekit_accessory_t *accessories[] = {
     HOMEKIT_ACCESSORY(.id=1, .category=homekit_accessory_category_air_conditioner, .services=(homekit_service_t*[]) {
         HOMEKIT_SERVICE(ACCESSORY_INFORMATION, .characteristics=(homekit_characteristic_t*[]) {
-            HOMEKIT_CHARACTERISTIC(NAME, HP_NAME),
+            HOMEKIT_CHARACTERISTIC(NAME, HP_UNIQUE_NAME),
             HOMEKIT_CHARACTERISTIC(MANUFACTURER, HP_MANUFACTURER),
             HOMEKIT_CHARACTERISTIC(SERIAL_NUMBER, HP_SERIALNUM),
             HOMEKIT_CHARACTERISTIC(MODEL, HP_MODEL),

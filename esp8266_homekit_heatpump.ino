@@ -77,7 +77,7 @@ void setup()
         wm.setConfigPortalBlocking(false);
         wm.setSaveConfigCallback([](){ boardStatus = STATUS_NO_OTA; });
 
-        boardStatus = wm.autoConnect(HP_UNIQUE_NAME, WIFI_AP_PASS) ? STATUS_NO_OTA : STATUS_NO_WIFI;
+        boardStatus = wm.autoConnect(HP_UNIQUE_NAME) ? STATUS_NO_OTA : STATUS_NO_WIFI;
         break;
 
     case STATUS_NO_OTA:
