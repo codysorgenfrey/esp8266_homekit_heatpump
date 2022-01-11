@@ -86,9 +86,19 @@ void setup()
         ArduinoOTA.setHostname(HP_UNIQUE_NAME);
         ArduinoOTA.setPassword(OTA_PASS);
         ArduinoOTA.setRebootOnSuccess(true);
-        ArduinoOTA.onStart([](){ boardStatus = STATUS_OTA_PROGRESS; });
+        ArduinoOTA.onStart([](){ 
+            boardStatus = STATUS_OTA_PROGRESS;
+            #if HK_DEBUG
+                Serial.println("Starting OTA Update");
+            #endif
+        });
         ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { handleStatus(); });
-        ArduinoOTA.onError([](ota_error_t error) { boardStatus = STATUS_ERROR; });
+        ArduinoOTA.onError([](ota_error_t error) { 
+            boardStatus = STATUS_ERROR;
+            #if HK_DEBUG
+                Serial.println(error);
+            #endif
+        });
         ArduinoOTA.begin();
         
         // Connect to Homekit
@@ -123,9 +133,6 @@ void loop()
         return;
     }
 
-    // Handle OTA 
-    if (boardStatus != STATUS_NO_OTA) ArduinoOTA.handle();
-
     // Handle Homekit
     if (boardStatus != STATUS_NO_HOMEKIT) arduino_homekit_loop();
 
@@ -133,4 +140,7 @@ void loop()
     #if !HP_DISCONNECTED
         if (boardStatus != STATUS_NO_HEAT_PUMP) hp.sync();
     #endif
+
+    // Handle OTA 
+    if (boardStatus != STATUS_NO_OTA) ArduinoOTA.handle();
 }
