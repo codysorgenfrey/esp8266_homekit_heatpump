@@ -5,7 +5,8 @@
 #include <homekit/characteristics.h>
 
 // Board stuff
-#define LED BUILTIN_LED
+#define STATUS_LED BUILTIN_LED
+#define PWR_LED 16
 #define LED_ON LOW
 #define LED_OFF HIGH
 
@@ -13,17 +14,17 @@
 #define SKETCH_VER "0.0.1"
 
 // Heat pump stuff
-#define HP_DISCONNECTED true
+#define HP_DISCONNECTED false
 #define HP_MANUFACTURER "Mitsubishi-Electric"
 #define HP_NAME "Split-System-Heat-Pump"
 #define HP_MODEL "MSZ-GL12NA"
-#define HP_SERIALNUM "88N11458"
-#define HP_UNIQUE_NAME "88N11458-Split-System-Heat-Pump"
+#define HP_SERIALNUM "88N11426"
+#define HP_UNIQUE_NAME "88N11426-Split-System-Heat-Pump"
 #define HP_DEFAULT_HEAT_THRESH 18.8889 // 66 Deg F
 #define HP_DEFAULT_COOL_THRESH 23.3333 // 74 Deg F
 
 // Homekit stuff
-#define HK_DEBUG true
+#define HK_DEBUG false
 #define HK_UPDATE_TIMER 15 // Update homekit every X seconds
 #if !HK_DEBUG
     #define HOMEKIT_LOG_LEVEL HOMEKIT_NO_LOG // turn off logs for Heat Pumps

@@ -36,13 +36,13 @@ unsigned long lastBlinkMs = 0;
 void handleStatus() {
     unsigned long nowMs = millis();
     if ((nowMs - lastBlinkMs) >= statusPatternRate[boardStatus]) {
-        if (boardStatus == STATUS_OK && digitalRead(LED) == LED_OFF) {
-            digitalWrite(LED, LED_ON);
+        if (boardStatus == STATUS_OK && digitalRead(STATUS_LED) == LED_ON) {
+            digitalWrite(STATUS_LED, LED_OFF);
         } else {
             for (int x = 0; x < statusBlinkPattern[boardStatus]; x++) {
-                digitalWrite(LED, LED_ON);
+                digitalWrite(STATUS_LED, LED_ON);
                 delay(99);
-                digitalWrite(LED, LED_OFF);
+                digitalWrite(STATUS_LED, LED_OFF);
                 delay(99);
             }
         }
@@ -60,8 +60,10 @@ void heatPumpTellHomekitWhatsUp() {
 void setup()
 {
     // Setup output LED
-    pinMode(LED, OUTPUT); // set up onboard LED
-    digitalWrite(LED, LED_OFF);
+    pinMode(STATUS_LED, OUTPUT); // set up status LED
+    pinMode(PWR_LED, OUTPUT);    // set up power LED
+    digitalWrite(STATUS_LED, LED_OFF);
+    digitalWrite(PWR_LED, LED_ON);
 
     #if HP_DISCONNECTED
         Serial.begin(115200);
@@ -103,12 +105,12 @@ void setup()
 
     case STATUS_NO_HEAT_PUMP:
         // Connect to heat pump
-        Serial.flush();
-        Serial.end();
-        hp.enableExternalUpdate();
-        hp.setSettingsChangedCallback(heatPumpTellHomekitWhatsUp);
-        hp.setOnConnectCallback(heatPumpTellHomekitWhatsUp);
         #if !HP_DISCONNECTED
+            Serial.flush();
+            Serial.end();
+            hp.enableExternalUpdate();
+            hp.setSettingsChangedCallback(heatPumpTellHomekitWhatsUp);
+            hp.setOnConnectCallback(heatPumpTellHomekitWhatsUp);
             boardStatus = hp.connect(&Serial) ? STATUS_OK : STATUS_NO_HEAT_PUMP;
         #else
             boardStatus = STATUS_OK;
