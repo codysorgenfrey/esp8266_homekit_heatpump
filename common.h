@@ -10,9 +10,6 @@
 #define LED_ON LOW
 #define LED_OFF HIGH
 
-// OTA Stuff
-#define SKETCH_VER "0.0.1"
-
 // Heat pump stuff
 #define HP_DISCONNECTED false
 #define HP_MANUFACTURER "Mitsubishi-Electric"
