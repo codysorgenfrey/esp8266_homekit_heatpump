@@ -25,6 +25,7 @@
 #if !HK_DEBUG
     #define HOMEKIT_LOG_LEVEL HOMEKIT_NO_LOG // turn off logs for Heat Pumps
 #endif
+#define SKETCH_VER "0.0.1"
 
 // State handling
 #define STATUS_ERROR 0
