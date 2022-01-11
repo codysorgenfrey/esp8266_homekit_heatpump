@@ -6,9 +6,9 @@ extern "C" homekit_characteristic_t fanState; // 0 inactive, 1 idle, 2 blowing a
 extern "C" homekit_characteristic_t fanAuto;  // 0 manual, 1 auto
 extern "C" homekit_characteristic_t fanSpeed; // 0-100
 
-const char * fanSpeedToSetting() {
+String fanSpeedToSetting() {
     int speed0_4 = floor((fanSpeed.value.float_value / 25) + 0.5);
-    return speed0_4 != 0 ? String(speed0_4).c_str() : "QUIET";
+    return speed0_4 != 0 ? String(speed0_4) : "QUIET";
 }
 
 void heatPumpFanAccessorySettingsChanged() {
@@ -58,7 +58,7 @@ void fanActiveSetter(homekit_value_t value) {
     fanActive.value = value;
     
     #if !HP_DISCONNECTED
-        const char *fanSpeedSetting = fanSpeedToSetting();
+        const char *fanSpeedSetting = fanSpeedToSetting().c_str();
         hp.setFanSpeed(fanActive.value.bool_value ? fanSpeedSetting : "QUIET");
         hp.update();
     #endif
@@ -73,7 +73,7 @@ void fanAutoSetter(homekit_value_t value) {
     fanAuto.value = value;
     
     #if !HP_DISCONNECTED
-        const char *fanSpeedSetting = fanSpeedToSetting();
+        const char *fanSpeedSetting = fanSpeedToSetting().c_str();
         hp.setFanSpeed(fanAuto.value.bool_value ? "AUTO" : fanSpeedSetting);
         hp.update();
     #endif
@@ -88,7 +88,7 @@ void fanSpeedSetter(homekit_value_t value) {
     fanSpeed.value = value;
     
     #if !HP_DISCONNECTED
-        hp.setFanSpeed(fanSpeedToSetting());
+        hp.setFanSpeed(fanSpeedToSetting().c_str());
         hp.update();
     #endif
 }

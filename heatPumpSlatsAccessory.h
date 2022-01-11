@@ -7,6 +7,10 @@ extern "C" homekit_characteristic_t slatCurAngle;  // -90 to 90 where -90 is str
 extern "C" homekit_characteristic_t slatTarAngle;  // -90 to 90 where -90 is straight out and 90 is straight down
 extern "C" homekit_characteristic_t slatSwingMode; // 0 disabled, 1 enabled
 
+String slatAngleToVaneSetting(int slatAngle, bool swing) {
+    return swing ? "SWING" : String(((90 + slatAngle) / 45) + 1);
+}
+
 void heatPumpSlatsAccessorySettingsChanged() {
     /* Air direction (vertical): 1-5, SWING, or AUTO */
     const char *slatMode = hp.getVaneSetting();
@@ -21,8 +25,9 @@ void heatPumpSlatsAccessorySettingsChanged() {
             hpSlatAngle = 90;
         else if (hpMode == "COOL" || hpMode == "DRY")
             hpSlatAngle = -90;
-    } else if (!hpSlatSwing)
+    } else if (!hpSlatSwing) {
         hpSlatAngle = -90 + ((atoi(slatMode) - 1) * 45);
+    }
 
     // State
     if (slatState.value.int_value != hpSlatState) {
@@ -52,7 +57,7 @@ void slatTarAngleSetter(homekit_value_t value) {
     slatTarAngle.value = value;
 
     #if !HP_DISCONNECTED
-        hp.setVaneSetting(slatSwingMode.value.bool_value ? "SWING" : String(((90 + slatTarAngle.value.float_value) / 45) + 1).c_str());
+        hp.setVaneSetting(slatAngleToVaneSetting(slatTarAngle.value.int_value, slatSwingMode.value.bool_value).c_str());
         hp.update();
     #endif
 }
@@ -66,7 +71,7 @@ void slatSwingModeSetter(homekit_value_t value) {
     slatSwingMode.value = value;
 
     #if !HP_DISCONNECTED
-        hp.setVaneSetting(slatSwingMode.value.bool_value ? "SWING" : String(((90 + slatTarAngle.value.float_value) / 45) + 1).c_str());
+        hp.setVaneSetting(slatAngleToVaneSetting(slatTarAngle.value.int_value, slatSwingMode.value.bool_value).c_str());
         hp.update();
     #endif
 }

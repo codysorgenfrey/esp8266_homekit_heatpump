@@ -133,8 +133,8 @@ void heatPumpAccessorySettingsChanged() {
         }
 
     // Room temperature
-    if (roomTemp.value.float_value != hp.getRoomTemperature()) {
-        roomTemp.value.float_value = hp.getRoomTemperature();
+    if (roomTemp.value.float_value != hpRoomTemp) {
+        roomTemp.value.float_value = hpRoomTemp;
         homekit_characteristic_notify(&roomTemp, roomTemp.value);
     }
 }

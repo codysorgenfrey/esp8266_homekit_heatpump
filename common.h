@@ -25,7 +25,6 @@
 
 // Homekit stuff
 #define HK_DEBUG false
-#define HK_UPDATE_TIMER 15 // Update homekit every X seconds
 #if !HK_DEBUG
     #define HOMEKIT_LOG_LEVEL HOMEKIT_NO_LOG // turn off logs for Heat Pumps
 #endif
@@ -34,9 +33,9 @@
 #define STATUS_ERROR 0
 #define STATUS_OK 1
 #define STATUS_NO_WIFI 2
-#define STATUS_NO_HEAT_PUMP 3
-#define STATUS_OTA_PROGRESS 4
-#define STATUS_NO_HOMEKIT 5
-#define STATUS_NO_OTA 6
+#define STATUS_NO_OTA 3
+#define STATUS_NO_HOMEKIT 4
+#define STATUS_NO_HEAT_PUMP 5
+#define STATUS_OTA_PROGRESS 6
 
 #endif

@@ -17,19 +17,19 @@ int statusBlinkPattern[7] = {
     10, // Error
     0,  // ok
     1,  // no wifi
-    2,  // no heat pump
-    3,  // OTA progress
-    2,  // No Homkit
-    2   // No OTA
+    2,  // No OTA
+    3,  // No Homkit
+    4,  // no heat pump
+    3   // OTA progress
 };
 int statusPatternRate[7] = {
     2000, // error
     1000, // ok
     1000, // no wifi
-    1000, // no heat pump
-    2000, // OTA progress
+    1000, // No OTA
     1000, // No homekit
-    1000  // No OTA
+    1000, // no heat pump
+    2000  // OTA progress
 };
 unsigned long lastBlinkMs = 0;
 
@@ -65,22 +65,23 @@ void setup()
     digitalWrite(STATUS_LED, LED_OFF);
     digitalWrite(PWR_LED, LED_ON);
 
-    #if HP_DISCONNECTED
+    #if HK_DEBUG
         Serial.begin(115200);
     #endif
 
-    switch (boardStatus)
-    {
-    case STATUS_NO_WIFI:
+    if (boardStatus == STATUS_NO_WIFI) {
         // Connect to wifi
-        wm.setDebugOutput(false);
+        wm.setDebugOutput(HK_DEBUG);
         wm.setConfigPortalBlocking(false);
-        wm.setSaveConfigCallback([](){ boardStatus = STATUS_NO_OTA; });
+        wm.setSaveConfigCallback([](){ 
+            boardStatus = STATUS_NO_OTA;
+            setup();
+        });
 
         boardStatus = wm.autoConnect(HP_UNIQUE_NAME) ? STATUS_NO_OTA : STATUS_NO_WIFI;
-        break;
-
-    case STATUS_NO_OTA:
+    }
+    
+    if (boardStatus == STATUS_NO_OTA) {
         // Connect OTA
         ArduinoOTA.setHostname(HP_UNIQUE_NAME);
         ArduinoOTA.setPassword(OTA_PASS);
@@ -89,39 +90,25 @@ void setup()
         ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { handleStatus(); });
         ArduinoOTA.onError([](ota_error_t error) { boardStatus = STATUS_ERROR; });
         ArduinoOTA.begin();
-
-        boardStatus = STATUS_NO_HOMEKIT;
-        break;
-
-    case STATUS_NO_HOMEKIT:
+        
         // Connect to Homekit
+        boardStatus = STATUS_NO_HOMEKIT;
         initHeatPumpAccessory();
         initHeatPumpFanAccessory();
         initHeatPumpSlatsAccessory();
         arduino_homekit_setup(&config);
-
-        boardStatus = STATUS_NO_HEAT_PUMP;
-        break;
-
-    case STATUS_NO_HEAT_PUMP:
+        
         // Connect to heat pump
+        boardStatus = STATUS_NO_HEAT_PUMP;
         #if !HP_DISCONNECTED
-            Serial.flush();
-            Serial.end();
+            boardStatus = hp.connect(&Serial) ? STATUS_OK : STATUS_NO_HEAT_PUMP;
             hp.enableExternalUpdate();
             hp.setSettingsChangedCallback(heatPumpTellHomekitWhatsUp);
+            hp.setStatusChangedCallback([](heatpumpStatus status){ heatPumpTellHomekitWhatsUp(); });
             hp.setOnConnectCallback(heatPumpTellHomekitWhatsUp);
-            boardStatus = hp.connect(&Serial) ? STATUS_OK : STATUS_NO_HEAT_PUMP;
         #else
             boardStatus = STATUS_OK;
         #endif
-
-        break;
-
-    default:
-        boardStatus = STATUS_ERROR;
-        Serial.println("***ERROR: UNKONWN STATUS***");
-        break;
     }
 }
 
@@ -130,38 +117,20 @@ void loop()
     // Status blinks
     handleStatus();
 
-    switch (boardStatus)
-    {
-    case STATUS_NO_WIFI:
+    // Handle WiFi
+    if (boardStatus == STATUS_NO_WIFI) {
         wm.process();
-        break;
-    
-    case STATUS_NO_OTA:
-        setup();
-        break;
-
-    case STATUS_NO_HEAT_PUMP:
-        setup();
-        break;
-
-    case STATUS_NO_HOMEKIT:
-        setup();
-        break;
-
-    case STATUS_OK:
-        // Handle OTA 
-        ArduinoOTA.handle();
-
-        // Handle Homekit
-        arduino_homekit_loop();
-
-        // Handle heat pump
-        #if !HP_DISCONNECTED
-            hp.sync();
-        #endif
-        break;
-    
-    default:
-        break;
+        return;
     }
+
+    // Handle OTA 
+    if (boardStatus != STATUS_NO_OTA) ArduinoOTA.handle();
+
+    // Handle Homekit
+    if (boardStatus != STATUS_NO_HOMEKIT) arduino_homekit_loop();
+
+    // Handle heat pump
+    #if !HP_DISCONNECTED
+        if (boardStatus != STATUS_NO_HEAT_PUMP) hp.sync();
+    #endif
 }
