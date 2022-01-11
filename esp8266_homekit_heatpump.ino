@@ -96,7 +96,12 @@ void setup()
         ArduinoOTA.onError([](ota_error_t error) { 
             boardStatus = STATUS_ERROR;
             #if HK_DEBUG
-                Serial.println(error);
+                Serial.printf("Error[%u]: ", error);
+                if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+                else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+                else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+                else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+                else if (error == OTA_END_ERROR) Serial.println("End Failed");
             #endif
         });
         ArduinoOTA.begin();
@@ -124,6 +129,9 @@ void setup()
 
 void loop()
 {
+    // Handle OTA 
+    if (boardStatus != STATUS_NO_OTA) ArduinoOTA.handle();
+    
     // Status blinks
     handleStatus();
 
@@ -140,7 +148,4 @@ void loop()
     #if !HP_DISCONNECTED
         if (boardStatus != STATUS_NO_HEAT_PUMP) hp.sync();
     #endif
-
-    // Handle OTA 
-    if (boardStatus != STATUS_NO_OTA) ArduinoOTA.handle();
 }
