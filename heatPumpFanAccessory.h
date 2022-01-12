@@ -1,5 +1,6 @@
 #include "common.h"
 #include <HeatPump.h>
+#include <homekit/characteristics.h>
 
 extern "C" homekit_characteristic_t fanActive;
 extern "C" homekit_characteristic_t fanState; // 0 inactive, 1 idle, 2 blowing air
@@ -57,10 +58,9 @@ void fanActiveSetter(homekit_value_t value) {
 
     fanActive.value = value;
     
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         const char *fanSpeedSetting = fanSpeedToSetting().c_str();
         hp.setFanSpeed(fanActive.value.bool_value ? fanSpeedSetting : "QUIET");
-        hp.update();
     #endif
 }
 
@@ -71,11 +71,14 @@ void fanAutoSetter(homekit_value_t value) {
     #endif
 
     fanAuto.value = value;
+    if (fanAuto.value.bool_value && !fanActive.value.bool_value) { // if auto, tell homekit fan is on
+        fanActive.value.bool_value = true;
+        homekit_characteristic_notify(&fanActive, fanActive.value);
+    }
     
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         const char *fanSpeedSetting = fanSpeedToSetting().c_str();
         hp.setFanSpeed(fanAuto.value.bool_value ? "AUTO" : fanSpeedSetting);
-        hp.update();
     #endif
 }
 
@@ -87,9 +90,8 @@ void fanSpeedSetter(homekit_value_t value) {
 
     fanSpeed.value = value;
     
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         hp.setFanSpeed(fanSpeedToSetting().c_str());
-        hp.update();
     #endif
 }
 

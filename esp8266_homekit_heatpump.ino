@@ -1,7 +1,7 @@
-#include <arduino_homekit_server.h>
-#include <WiFiManager.h>
-#include <ArduinoOTA.h>
 #include "common.h"
+#include <arduino_homekit_server.h> // need to disable logging in homekit_debug.h
+#include <ArduinoOTA.h>
+#include <WiFiManager.h>
 #include <HeatPump.h>
 #include "heatPumpAccessory.h"
 #include "heatPumpFanAccessory.h"
@@ -35,7 +35,8 @@ unsigned long lastBlinkMs = 0;
 
 void handleStatus() {
     unsigned long nowMs = millis();
-    if ((nowMs - lastBlinkMs) >= statusPatternRate[boardStatus]) {
+    int diff = nowMs - lastBlinkMs;
+    if (abs(diff) >= statusPatternRate[boardStatus]) {
         if (boardStatus == STATUS_OK && digitalRead(STATUS_LED) == LED_ON) {
             digitalWrite(STATUS_LED, LED_OFF);
         } else {
@@ -114,16 +115,15 @@ void setup()
         arduino_homekit_setup(&config);
         
         // Connect to heat pump
-        boardStatus = STATUS_NO_HEAT_PUMP;
-        #if !HP_DISCONNECTED
+        #if !HK_DEBUG
             boardStatus = hp.connect(&Serial) ? STATUS_OK : STATUS_NO_HEAT_PUMP;
-            hp.enableExternalUpdate();
+        #endif
+        
+        if (boardStatus == STATUS_OK) {
+            hp.enableExternalUpdate(); // implies autoUpdate as well
             hp.setSettingsChangedCallback(heatPumpTellHomekitWhatsUp);
             hp.setStatusChangedCallback([](heatpumpStatus status){ heatPumpTellHomekitWhatsUp(); });
-            hp.setOnConnectCallback(heatPumpTellHomekitWhatsUp);
-        #else
-            boardStatus = STATUS_OK;
-        #endif
+        }
     }
 }
 
@@ -145,7 +145,5 @@ void loop()
     if (boardStatus != STATUS_NO_HOMEKIT) arduino_homekit_loop();
 
     // Handle heat pump
-    #if !HP_DISCONNECTED
-        if (boardStatus != STATUS_NO_HEAT_PUMP) hp.sync();
-    #endif
+    if (boardStatus != STATUS_NO_HEAT_PUMP) hp.sync();
 }

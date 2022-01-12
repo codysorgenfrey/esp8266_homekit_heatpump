@@ -2,7 +2,6 @@
 #define __COMMON_H__
 
 #include "secrets.h"
-#include <homekit/characteristics.h>
 
 // Board stuff
 #define STATUS_LED BUILTIN_LED
@@ -11,7 +10,6 @@
 #define LED_OFF HIGH
 
 // Heat pump stuff
-#define HP_DISCONNECTED false
 #define HP_MANUFACTURER "Mitsubishi-Electric"
 #define HP_NAME "Split-System-Heat-Pump"
 #define HP_MODEL "MSZ-GL12NA"
@@ -22,9 +20,6 @@
 
 // Homekit stuff
 #define HK_DEBUG false
-#if !HK_DEBUG
-    #define HOMEKIT_LOG_LEVEL HOMEKIT_NO_LOG // turn off logs for Heat Pumps
-#endif
 #define SKETCH_VER "0.0.1"
 
 // State handling

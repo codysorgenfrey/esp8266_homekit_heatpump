@@ -1,5 +1,6 @@
 #include "common.h"
 #include <HeatPump.h>
+#include <homekit/characteristics.h>
 
 extern "C" homekit_characteristic_t slatType;      // 0 horizontal, 1 vertical
 extern "C" homekit_characteristic_t slatState;     // 0 fixed, 1 jammed, 2 swinging
@@ -56,9 +57,8 @@ void slatTarAngleSetter(homekit_value_t value) {
 
     slatTarAngle.value = value;
 
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         hp.setVaneSetting(slatAngleToVaneSetting(slatTarAngle.value.int_value, slatSwingMode.value.bool_value).c_str());
-        hp.update();
     #endif
 }
 
@@ -70,9 +70,8 @@ void slatSwingModeSetter(homekit_value_t value) {
 
     slatSwingMode.value = value;
 
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         hp.setVaneSetting(slatAngleToVaneSetting(slatTarAngle.value.int_value, slatSwingMode.value.bool_value).c_str());
-        hp.update();
     #endif
 }
 

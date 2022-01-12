@@ -1,5 +1,6 @@
 #include "common.h"
 #include <HeatPump.h>
+#include <homekit/characteristics.h>
 
 #ifndef __HEATPUMPACCESSORY_H__
 #define __HEATPUMPACCESSORY_H__
@@ -53,6 +54,7 @@ void heatPumpAccessorySettingsChanged() {
     // Get variables from Heat Pump & Homekit                       //
     //////////////////////////////////////////////////////////////////
     
+    bool hpPower = hp.getPowerSetting() == "ON";
     double hpTemp = hp.getTemperature();
     double hpRoomTemp = hp.getRoomTemperature();
     const char *hpMode = hp.getModeSetting();
@@ -92,13 +94,13 @@ void heatPumpAccessorySettingsChanged() {
     //////////////////////////////////////////////////////////////////
 
     // Active
-    if (active.value.bool_value != hp.getPowerSettingBool()) {
-        active.value.bool_value = hp.getPowerSettingBool();
+    if (active.value.bool_value != hpPower) {
+        active.value.bool_value = hpPower;
         homekit_characteristic_notify(&active, active.value);
     }
 
     // Mode
-    if (hpModes[hpTarState] != hp.getModeSetting()) {
+    if (hpModes[hpTarState] != hpMode) {
         tarState.value.int_value = hpTarState;
         homekit_characteristic_notify(&tarState, tarState.value);
     }
@@ -147,9 +149,8 @@ void activeSetter(homekit_value_t value) {
 
     active.value = value;
 
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         hp.setPowerSetting(active.value.bool_value ? "ON" : "OFF");
-        hp.update();
     #endif
 }
 
@@ -161,9 +162,8 @@ void tarStateSetter(homekit_value_t value) {
 
     tarState.value = value;
     
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         hp.setModeSetting(hpModes[tarState.value.int_value]);
-        hp.update();
     #endif
 }
 
@@ -175,9 +175,8 @@ void coolingTempSetter(homekit_value_t value) {
 
     coolingThresholdTemp.value = value;
 
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         hp.setTemperature(getTempFromState());
-        hp.update();
     #endif
 }
 
@@ -189,9 +188,8 @@ void heatingTempSetter(homekit_value_t value) {
 
     heatingThresholdTemp.value = value;
     
-    #if !HP_DISCONNECTED
+    #if !HK_DEBUG
         hp.setTemperature(getTempFromState());
-        hp.update();
     #endif
 }
 

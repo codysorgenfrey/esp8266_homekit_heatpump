@@ -1,5 +1,6 @@
 #include "common.h"
 #include <homekit/homekit.h>
+#include <homekit/characteristics.h>
 
 void my_accessory_identify(homekit_value_t _value) {
 	;/* Identify heat pump here */
