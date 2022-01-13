@@ -14,19 +14,20 @@ extern "C" homekit_characteristic_t tarState;             // 0 auto, 1 heating, 
 extern "C" homekit_characteristic_t coolingThresholdTemp; // 10-35
 extern "C" homekit_characteristic_t heatingThresholdTemp; // 0-25
 
-const char *hpModes[4] = {
+const char *hpModes[5] = {
     "AUTO",
     "HEAT",
     "COOL",
-    "OFF"
+    "FAN",
+    "DRY"
 };
 
-double getMedianTemp() {
+float getMedianTemp() {
     return ((heatingThresholdTemp.value.float_value - coolingThresholdTemp.value.float_value) / 2) + coolingThresholdTemp.value.float_value;
 }
 
-double getTempFromState() {
-    double hkTemp;
+float getTempFromState() {
+    float hkTemp;
     switch (tarState.value.int_value)
     {
     case 1: // Heating
@@ -43,8 +44,8 @@ double getTempFromState() {
     }
     
     /* Temperature Between 16 and 31 for Heat Pump */
-    hkTemp = max(hkTemp, 16.0);
-    hkTemp = min(hkTemp, 31.0);
+    hkTemp = max(hkTemp, 16.0f);
+    hkTemp = min(hkTemp, 31.0f);
     
     return hkTemp;
 }
@@ -55,16 +56,16 @@ void heatPumpAccessorySettingsChanged() {
     //////////////////////////////////////////////////////////////////
     
     bool hpPower = hp.getPowerSetting() == "ON";
-    double hpTemp = hp.getTemperature();
+    float hpTemp = hp.getTemperature();
     double hpRoomTemp = hp.getRoomTemperature();
     const char *hpMode = hp.getModeSetting();
 
     int hpTarState;
-    for (hpTarState = 0; hpTarState < 3; hpTarState += 1) { // has to be 1 less then count since we use hpTarState later
+    for (hpTarState = 0; hpTarState < 4; hpTarState += 1) { // has to be 1 less then count since we use hpTarState later
         if (hpModes[hpTarState] == hpMode)
             break;
     }
-    if (hpTarState == 3) hpTarState = 0; // Unsupported modes, setting Homekit to auto
+    if (hpTarState >= 3) hpTarState = 0; // Unsupported modes, setting Homekit to auto
     
     int hpCurState;
     double hkTemp;
@@ -72,22 +73,22 @@ void heatPumpAccessorySettingsChanged() {
     {
     case 1: // Heating
         hkTemp = heatingThresholdTemp.value.float_value;
-        hpCurState = 2;
+        hpCurState = 2; // Heating
         break;
 
     case 2: // Cooling
         hkTemp = coolingThresholdTemp.value.float_value;
-        hpCurState = 3;
+        hpCurState = 3; // Cooling
         break;
     
     default: // Auto and Off
         hkTemp = getMedianTemp(); // set temp in the middle
-        hpCurState = hkTemp >= hpRoomTemp ? 2 : 3;
+        hpCurState = hkTemp >= hpRoomTemp ? 2 : 3; // Heating or Cooling
         break;
     }
     
-    if (!hp.getOperating() && !(hpCurState == 0)) // Idle
-        hpCurState = 1;
+    if (!hp.getOperating() && !(hpCurState == 0)) // Idle and not inactive
+        hpCurState = 1; // Idle
 
     //////////////////////////////////////////////////////////////////
     // Update homekit if things don't match                         //

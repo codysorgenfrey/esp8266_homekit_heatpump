@@ -13,7 +13,10 @@
 #define HP_MANUFACTURER "Mitsubishi-Electric"
 #define HP_NAME "Split-System-Heat-Pump"
 #define HP_MODEL "MSZ-GL12NA"
-#define HP_SERIALNUM "88N11458"
+#define HP_SERIALNUM "88N11458" // Andy's room
+// #define HP_SERIALNUM "88N11476" // Dining room
+// #define HP_SERIALNUM "88N11479" // Livng room
+// #define HP_SERIALNUM "88N11426" // Master bed room
 #define HP_UNIQUE_NAME HP_NAME "-" HP_SERIALNUM
 #define HP_DEFAULT_HEAT_THRESH 18.8889 // 66 Deg F
 #define HP_DEFAULT_COOL_THRESH 23.3333 // 74 Deg F
