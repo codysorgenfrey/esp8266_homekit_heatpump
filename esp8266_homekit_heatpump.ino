@@ -1,15 +1,13 @@
 #include "common.h"
 #include <arduino_homekit_server.h> // need to disable logging in homekit_debug.h
 #include <ArduinoOTA.h>
-#include <WiFiManager.h>
+#include <ESP8266WiFi.h>
 #include <HeatPump.h>
 #include "heatPumpAccessory.h"
 #include "heatPumpFanAccessory.h"
 #include "heatPumpSlatsAccessory.h"
 
 extern "C" homekit_server_config_t config;
-
-WiFiManager wm;
 
 unsigned long int boardStatus = STATUS_NO_WIFI;
 
@@ -35,8 +33,8 @@ unsigned long lastBlinkMs = 0;
 
 void handleStatus() {
     unsigned long nowMs = millis();
-    int diff = nowMs - lastBlinkMs;
-    if (abs(diff) >= statusPatternRate[boardStatus]) {
+    int diff = max(nowMs, lastBlinkMs) - min(nowMs, lastBlinkMs);
+    if (diff >= statusPatternRate[boardStatus]) {
         if (boardStatus == STATUS_OK && digitalRead(STATUS_LED) == LED_ON) {
             digitalWrite(STATUS_LED, LED_OFF);
         } else {
@@ -66,65 +64,63 @@ void setup()
     digitalWrite(STATUS_LED, LED_OFF);
     digitalWrite(PWR_LED, LED_ON);
 
-    #if HK_DEBUG
+    #if !HP_CONNECTED
         Serial.begin(115200);
     #endif
 
-    if (boardStatus == STATUS_NO_WIFI) {
-        // Connect to wifi
-        wm.setDebugOutput(HK_DEBUG);
-        wm.setConfigPortalBlocking(false);
-        wm.setSaveConfigCallback([](){ 
-            boardStatus = STATUS_NO_OTA;
-            setup();
-        });
-
-        boardStatus = wm.autoConnect(HP_UNIQUE_NAME) ? STATUS_NO_OTA : STATUS_NO_WIFI;
+    HK_INFO_LINE("Connecting to WiFi.");
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
     }
+    HK_INFO_LINE("WiFi connected.");
+    boardStatus = STATUS_NO_OTA;
+
+    sl_printCloud(SHEETS_URL, HP_SERIALNUM, "Rebooting...");
+
+    HK_INFO_LINE("Setting up OTA updates.");
+    ArduinoOTA.setHostname(HP_UNIQUE_NAME);
+    ArduinoOTA.setPassword(OTA_PASS);
+    ArduinoOTA.setRebootOnSuccess(true);
+    ArduinoOTA.onStart([](){ 
+        boardStatus = STATUS_OTA_PROGRESS;
+        HK_INFO_LINE("Starting OTA Update");
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { handleStatus(); });
+    ArduinoOTA.onError([](ota_error_t error) { 
+        boardStatus = STATUS_ERROR;
+        HK_ERROR_LINE("OTA error[%u]", error);
+        if (error == OTA_AUTH_ERROR) HK_ERROR_LINE("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR) HK_ERROR_LINE("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR) HK_ERROR_LINE("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR) HK_ERROR_LINE("Receive Failed");
+        else if (error == OTA_END_ERROR) HK_ERROR_LINE("End Failed");
+    });
+    ArduinoOTA.begin();
     
-    if (boardStatus == STATUS_NO_OTA) {
-        // Connect OTA
-        ArduinoOTA.setHostname(HP_UNIQUE_NAME);
-        ArduinoOTA.setPassword(OTA_PASS);
-        ArduinoOTA.setRebootOnSuccess(true);
-        ArduinoOTA.onStart([](){ 
-            boardStatus = STATUS_OTA_PROGRESS;
-            #if HK_DEBUG
-                Serial.println("Starting OTA Update");
-            #endif
-        });
-        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { handleStatus(); });
-        ArduinoOTA.onError([](ota_error_t error) { 
-            boardStatus = STATUS_ERROR;
-            #if HK_DEBUG
-                Serial.printf("Error[%u]: ", error);
-                if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-                else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-                else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-                else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-                else if (error == OTA_END_ERROR) Serial.println("End Failed");
-            #endif
-        });
-        ArduinoOTA.begin();
-        
-        // Connect to Homekit
-        boardStatus = STATUS_NO_HOMEKIT;
-        initHeatPumpAccessory();
-        initHeatPumpFanAccessory();
-        initHeatPumpSlatsAccessory();
-        arduino_homekit_setup(&config);
-        
-        // Connect to heat pump
-        #if !HK_DEBUG
-            boardStatus = hp.connect(&Serial) ? STATUS_OK : STATUS_NO_HEAT_PUMP;
-        #endif
-        
-        if (boardStatus == STATUS_OK) {
+    HK_INFO_LINE("Connecting to Homekit.");
+    boardStatus = STATUS_NO_HOMEKIT;
+    initHeatPumpAccessory();
+    initHeatPumpFanAccessory();
+    initHeatPumpSlatsAccessory();
+    arduino_homekit_setup(&config);
+    HK_INFO_LINE("Homekit connected.");
+    boardStatus = STATUS_NO_HEAT_PUMP;
+    
+    #if HP_CONNECTED
+        HK_INFO_LINE("Connecting to heatpump.");
+        if (hp.connect(&Serial)) {
             hp.enableExternalUpdate(); // implies autoUpdate as well
             hp.setSettingsChangedCallback(heatPumpTellHomekitWhatsUp);
             hp.setStatusChangedCallback([](heatpumpStatus status){ heatPumpTellHomekitWhatsUp(); });
+            
+            boardStatus = STATUS_OK;
+            HK_INFO_LINE("Connected to heatpump.");
+        } else {
+            boardStatus = STATUS_NO_HEAT_PUMP;
+            HK_ERROR_LINE("Error connecting to heatpump.");
         }
-    }
+    #endif
 }
 
 void loop()
@@ -136,10 +132,7 @@ void loop()
     handleStatus();
 
     // Handle WiFi
-    if (boardStatus == STATUS_NO_WIFI) {
-        wm.process();
-        return;
-    }
+    if (boardStatus == STATUS_NO_WIFI) return;
 
     // Handle Homekit
     if (boardStatus != STATUS_NO_HOMEKIT) arduino_homekit_loop();

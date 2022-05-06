@@ -50,27 +50,21 @@ void heatPumpSlatsAccessorySettingsChanged() {
 }
 
 void slatTarAngleSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP slat target angle: ");
-        Serial.println(value.int_value);
-    #endif
+    HK_INFO_LINE("Setting HP slat target angle: %i", value.int_value);  
 
     slatTarAngle.value = value;
 
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         hp.setVaneSetting(slatAngleToVaneSetting(slatTarAngle.value.int_value, slatSwingMode.value.bool_value).c_str());
     #endif
 }
 
 void slatSwingModeSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP slat swing mode: ");
-        Serial.println(value.bool_value);
-    #endif
+    HK_INFO_LINE("Setting HP slat swing mode: %s", value.bool_value ? "True" : "False");
 
     slatSwingMode.value = value;
 
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         hp.setVaneSetting(slatAngleToVaneSetting(slatTarAngle.value.int_value, slatSwingMode.value.bool_value).c_str());
     #endif
 }

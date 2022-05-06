@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.pyp": "python",
+        "homekit.h": "c",
+        "characteristics.h": "c"
+    }
+}

@@ -51,24 +51,18 @@ void heatPumpFanAccessorySettingsChanged() {
 }
 
 void fanActiveSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP fan active: ");
-        Serial.println(value.bool_value);
-    #endif
+    HK_INFO_LINE("Setting HP fan active: %s", value.bool_value ? "True" : "False");
 
     fanActive.value = value;
     
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         const char *fanSpeedSetting = fanSpeedToSetting().c_str();
         hp.setFanSpeed(fanActive.value.bool_value ? fanSpeedSetting : "QUIET");
     #endif
 }
 
 void fanAutoSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP fan auto: ");
-        Serial.println(value.bool_value);
-    #endif
+    HK_INFO_LINE("Setting HP fan auto: %s", value.bool_value ? "True" : "False");
 
     fanAuto.value = value;
     if (fanAuto.value.bool_value && !fanActive.value.bool_value) { // if auto, tell homekit fan is on
@@ -76,21 +70,18 @@ void fanAutoSetter(homekit_value_t value) {
         homekit_characteristic_notify(&fanActive, fanActive.value);
     }
     
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         const char *fanSpeedSetting = fanSpeedToSetting().c_str();
         hp.setFanSpeed(fanAuto.value.bool_value ? "AUTO" : fanSpeedSetting);
     #endif
 }
 
 void fanSpeedSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP fan speed: ");
-        Serial.println(value.float_value);
-    #endif
+    HK_INFO_LINE("Setting HP fan speed: %f", value.float_value);
 
     fanSpeed.value = value;
     
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         hp.setFanSpeed(fanSpeedToSetting().c_str());
     #endif
 }

@@ -143,53 +143,41 @@ void heatPumpAccessorySettingsChanged() {
 }
 
 void activeSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP active: ");
-        Serial.println(value.bool_value ? "ON" : "OFF");
-    #endif
+    HK_INFO_LINE("Setting HP active: %s", value.bool_value ? "ON" : "OFF");
 
     active.value = value;
 
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         hp.setPowerSetting(active.value.bool_value ? "ON" : "OFF");
     #endif
 }
 
 void tarStateSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP mode: ");
-        Serial.println(hpModes[value.int_value]);
-    #endif
+    HK_INFO_LINE("Setting HP mode: %s", hpModes[value.int_value]);
 
     tarState.value = value;
     
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         hp.setModeSetting(hpModes[tarState.value.int_value]);
     #endif
 }
 
 void coolingTempSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP cooling temp: ");
-        Serial.println(value.float_value);
-    #endif
+    HK_INFO_LINE("Setting HP cooling temp: %f", value.float_value);
 
     coolingThresholdTemp.value = value;
 
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         hp.setTemperature(getTempFromState());
     #endif
 }
 
 void heatingTempSetter(homekit_value_t value) {
-    #if HK_DEBUG
-        Serial.print("Setting HP heating temp: ");
-        Serial.println(value.float_value);
-    #endif
+    HK_INFO_LINE("Setting HP heating temp: %f", value.float_value);
 
     heatingThresholdTemp.value = value;
     
-    #if !HK_DEBUG
+    #if HP_CONNECTED
         hp.setTemperature(getTempFromState());
     #endif
 }
